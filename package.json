@@ -1,11 +1,13 @@
 {
   "name": "@dougflip/metronome",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "dougflip",
   "license": "MIT",
   "description": "Headless metronome with events",
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "homepage": "https://github.com/dougflip/metronome",
   "scripts": {
