@@ -1,6 +1,6 @@
 {
   "name": "@dougflip/metronome",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "dougflip",
   "license": "MIT",
   "description": "Headless metronome with events",
@@ -12,12 +12,13 @@
   "homepage": "https://github.com/dougflip/metronome",
   "scripts": {
     "build": "tsc",
-    "check": "concurrently \"npm:lint\" \"npm:compile\" \"npm:format:check\" \"npm:check:exports\"",
+    "check": "concurrently \"npm:build\" \"npm:lint\" \"npm:compile\" \"npm:format:check\" \"npm:check:exports\"",
     "check:exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "compile": "tsc --noEmit",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
-    "lint": "oxlint ./src"
+    "lint": "oxlint ./src",
+    "prepublish": "npm run check"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
