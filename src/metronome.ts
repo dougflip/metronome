@@ -314,3 +314,5 @@ export function createMetronome(config: MetronomeConfig) {
     getState,
   };
 }
+
+export type Metronome = ReturnType<typeof createMetronome>;
