@@ -1,9 +1,13 @@
 {
   "name": "@dougflip/metronome",
   "version": "0.0.1",
+  "author": "dougflip",
+  "license": "MIT",
   "description": "Headless metronome with events",
   "main": "dist/index.js",
+  "files": ["dist"],
   "type": "module",
+  "homepage": "https://github.com/dougflip/metronome",
   "scripts": {
     "build": "tsc",
     "check": "concurrently \"npm:lint\" \"npm:compile\" \"npm:format:check\" \"npm:check:exports\"",
@@ -13,17 +17,15 @@
     "format:check": "prettier --check src/**/*.ts",
     "lint": "oxlint ./src"
   },
-  "keywords": [
-    "audio",
-    "metronome"
-  ],
-  "author": "dougflip",
-  "license": "MIT",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
     "concurrently": "^9.1.2",
     "oxlint": "^0.16.4",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
-  }
+  },
+  "keywords": [
+    "audio",
+    "metronome"
+  ]
 }
