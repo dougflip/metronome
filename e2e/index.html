@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dougflip Metronome Tests</title>
+  </head>
+  <body>
+    <h1>Metronome</h1>
+    <div>
+      <button id="start-metronome">Start Metronome</button>
+      <button id="pause-metronome">Pause Metronome</button>
+      <button id="resume-metronome">Resume Metronome</button>
+      <hr>
+      <div id="output"></div>
+    </div>
+    <script type="module">
+      import { createMetronome } from "/dist/metronome.js";
+
+      /**
+       * Appends a `<div> element with the provided `text` the screen.
+       */
+      const logToScreen = (text) => {
+        const div = document.createElement("div");
+        div.innerText = text;
+        document.getElementById('output').appendChild(div);
+      };
+
+      const startButton = () => document.getElementById("start-metronome");
+      const pauseButton = () => document.getElementById("pause-metronome");
+      const resumeButton = () => document.getElementById("resume-metronome");
+
+      const metronome = createMetronome({
+        tempo: 120,
+        beatsPerBar: 4,
+        volume: 50,
+
+        // log to the screen every beat
+        onBeatStart: ({ beatNumber, totalBeats }) => {
+          logToScreen(`onBeatStart: Beat: ${beatNumber} / Total Beats: ${totalBeats}`);
+        },
+
+        // log to the screen every measure
+        beatInterval: {
+          count: 4,
+          onBeatInterval: ({ currentInterval }) => logToScreen(`onBeatInterval: ${currentInterval}`),
+        },
+
+        // log to the screen after 8 full beats
+        maxBeats: {
+          count: 8,
+          onEnd: () => logToScreen(`onEnd`)
+        },
+      });
+
+      startButton().addEventListener("click", () => {
+        metronome.start();
+        startButton().disabled = true;
+      });
+
+      pauseButton().addEventListener("click", () => {
+        metronome.pause();
+      });
+
+      resumeButton().addEventListener("click", () => {
+        metronome.resume();
+      });
+    </script>
+  </body>
+</html>
