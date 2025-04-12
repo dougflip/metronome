@@ -15,6 +15,9 @@
     "check": "concurrently \"npm:build\" \"npm:lint\" \"npm:compile\" \"npm:format:check\" \"npm:check:exports\"",
     "check:exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "compile": "tsc --noEmit",
+    "pree2e": "npm run build",
+    "e2e": "playwright test",
+    "e2e:server": "http-server . --port 8080",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "lint": "oxlint ./src",
@@ -22,7 +25,10 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
+    "@playwright/test": "^1.51.1",
+    "@types/node": "^22.14.0",
     "concurrently": "^9.1.2",
+    "http-server": "^14.1.1",
     "oxlint": "^0.16.4",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"

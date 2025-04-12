@@ -1,2 +1,9 @@
 node_modules
 dist
+
+# Playwright
+/e2e/metronome.js
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

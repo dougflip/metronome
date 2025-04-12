@@ -99,12 +99,19 @@ npm run check
 
 ## Tests
 
-👷 Under construction 👷
+The [e2e](./e2e) dir contains the playwright tests for this package.
 
-I think the state management logic could be better extracted and unit tested.
-But short term, I am more interested in trying to write some functional tests
-where we actually run the code in a real browser and verify it.
-That is likely where I will start.
+```sh
+npm run e2e
+```
+
+The basic approach is to have an HTML page which creates a metronome, subscribes to
+all of the metronome's events, and outputs text to the page in response to the events.
+The tests will start the metronome and then assert that messages appear on the page.
+
+Eventually, I may look into extracting some of the state management and unit testing
+that in isolation. For now though, I am much more interested in verifying the metronome
+as a whole and ensuring the callbacks fire.
 
 ## Inspiration and Credit
 
