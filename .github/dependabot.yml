@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Dev dependencies PR for vite* and typescript* packages
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+    groups:
+      dev-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    pull-request-branch-name:
+      separator: "-"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
