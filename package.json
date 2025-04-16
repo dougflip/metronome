@@ -21,7 +21,7 @@
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "lint": "oxlint ./src",
-    "prepublish": "npm run check"
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
