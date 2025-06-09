@@ -29,7 +29,7 @@
     "@types/node": "^22.14.0",
     "concurrently": "^9.1.2",
     "http-server": "^14.1.1",
-    "oxlint": "^0.17.0",
+    "oxlint": "^0.18.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
   },
