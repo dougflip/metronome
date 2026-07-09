@@ -1,45 +1,12 @@
-export type MaxBeatsConfig = {
-  count: number;
-  onEnd?: () => void;
-};
-
-export type BeatEvent = {
-  beatNumber: number; // Current beat in the bar (1-based)
-  time: number; // Audio context time
-  totalBeats: number; // Total beats since metronome started
-};
-
-export type BeatIntervalConfig = {
-  count: number;
-  onBeatInterval: (event: { currentInterval: number }) => void;
-};
-
-export type MetronomeConfig = {
-  tempo: number;
-  beatsPerBar: number;
-  volume: number; // 0-100
-  onBeatStart?: (event: BeatEvent) => void;
-  maxBeats?: MaxBeatsConfig;
-  beatInterval?: BeatIntervalConfig;
-};
-
-export type MetronomeUpdateConfig = {
-  tempo?: number;
-  volume?: number;
-};
-
-export type PlaybackState = "playing" | "stopped" | "paused";
-
-type MetronomeState = {
-  playbackState: PlaybackState;
-  currentBeat: number;
-  totalBeats: number;
-  currentInterval: number;
-  nextNoteTime: number;
-  audioContext: AudioContext | null;
-  timerID: number | null;
-  lookaheadMs: number; // How far ahead to schedule audio (in milliseconds)
-};
+import type {
+  MetronomeConfig,
+  MetronomeState,
+  MetronomeUpdateConfig,
+} from "./metronome.types.js";
+import {
+  createSoundGenerator,
+  type SoundGenerator,
+} from "./sound-generator.js";
 
 const noop = () => {};
 
@@ -64,10 +31,14 @@ const noop = () => {};
  *                    Setting `count` to 4 will fire the event on beats 1, 5, 9, 13, etc.
  *                    This removes some of the bookkeeping you'd need to do on your end.
  *
- * Internally, the metronome uses the Web Audio API to generate a click sound.
- * It schedules the audio events ahead of time to ensure smooth playback.
- * The metronome can be started, stopped, paused, and resumed.
+ * Sound synthesis (the actual click) lives in `click-sound.ts` — this module only
+ * handles tempo, beat counting, and Web Audio API lookahead scheduling.
+ *
+ * The metronome can be started, stopped, paused, resumed, and destroyed.
  * You can also update the tempo and volume after creation.
+ *
+ * Call `destroy()` once the metronome is no longer needed (e.g. on component unmount)
+ * to release the AudioContext and any pending timers.
  */
 export function createMetronome(config: MetronomeConfig) {
   const state: MetronomeState = {
@@ -87,57 +58,49 @@ export function createMetronome(config: MetronomeConfig) {
   let onBeatStart = config.onBeatStart || noop;
   let maxBeatsConfig = config.maxBeats || null;
   let beatIntervalConfig = config.beatInterval || null;
+  let clickSoundGenerator: SoundGenerator | null = null;
+  let isDestroyed = false;
 
   // Calculate beat length in seconds based on tempo (BPM)
   const getBeatLength = () => 60.0 / tempo;
 
-  // Create and configure audio context if it doesn't exist
+  // Create and configure audio context and click sound generator if they don't exist
   const initializeAudioContext = () => {
+    if (isDestroyed) {
+      throw new Error(
+        "Cannot use a metronome instance after destroy() has been called.",
+      );
+    }
+
     if (!state.audioContext) {
       state.audioContext = new AudioContext();
+      clickSoundGenerator = createSoundGenerator(state.audioContext);
     }
+
     return state.audioContext;
   };
 
-  // Generate a click sound at the specified time
+  // Generate a click sound and fire beat callbacks at the specified time
   const scheduleNote = (time: number) => {
-    if (!state.audioContext) return;
+    if (!state.audioContext || !clickSoundGenerator) return;
 
-    // Create oscillator
-    const oscillator = state.audioContext.createOscillator();
-    const gainNode = state.audioContext.createGain();
-
-    // Configure oscillator
-    // Use different frequency for the first beat of the bar (when currentBeat is 0)
     const isFirstBeatOfBar = state.currentBeat % beatsPerBar === 0;
-    oscillator.frequency.value = isFirstBeatOfBar ? 1000 : 800;
 
-    // Configure volume
-    gainNode.gain.value = volume;
+    clickSoundGenerator.play({
+      time,
+      isAccent: isFirstBeatOfBar,
+      volume,
+    });
 
-    // Short duration click
-    gainNode.gain.setValueAtTime(volume, time);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
-
-    // Connect nodes
-    oscillator.connect(gainNode);
-    gainNode.connect(state.audioContext.destination);
-
-    // Schedule and play
-    oscillator.start(time);
-    oscillator.stop(time + 0.03);
-
-    // Create a separate oscillator just for precise callback timing
     // Calculate the actual beat number (1-based) to pass to the callback
     const beatNumber = (state.currentBeat % beatsPerBar) + 1;
 
-    // Create a separate oscillator just for precise callback timing
+    // Create a separate, silent oscillator purely for precise callback timing.
+    // The audio clock is far more accurate than setTimeout, so we piggyback
+    // on its `onended` event to fire onBeatStart exactly in sync with the click.
     const callbackTrigger = state.audioContext.createOscillator();
-
-    // Use minimal resources - inaudible frequency and no gain needed
     callbackTrigger.frequency.value = 1;
 
-    // Set up the callback to fire exactly when the oscillator ends
     callbackTrigger.onended = () => {
       onBeatStart({
         beatNumber,
@@ -223,7 +186,7 @@ export function createMetronome(config: MetronomeConfig) {
 
   // Start the metronome
   const start = () => {
-    if (state.playbackState === "playing") return;
+    if (isDestroyed || state.playbackState === "playing") return;
 
     const audioContext = initializeAudioContext();
 
@@ -292,6 +255,32 @@ export function createMetronome(config: MetronomeConfig) {
     }
   };
 
+  /**
+   * Permanently releases the metronome's resources: stops playback,
+   * clears any pending timers, and closes the underlying AudioContext.
+   *
+   * Call this once the metronome is no longer needed (e.g. on component
+   * unmount / effect cleanup). After calling destroy(), the instance
+   * must not be used again — calling start() afterwards throws.
+   */
+  const destroy = () => {
+    if (isDestroyed) return;
+
+    stop();
+
+    if (state.audioContext) {
+      // closing an AudioContext releases its underlying audio hardware resources
+      void state.audioContext.close();
+    }
+
+    state.audioContext = null;
+    clickSoundGenerator = null;
+    onBeatStart = noop;
+    maxBeatsConfig = null;
+    beatIntervalConfig = null;
+    isDestroyed = true;
+  };
+
   // Get current state
   const getState = () => ({
     playbackState: state.playbackState,
@@ -303,6 +292,7 @@ export function createMetronome(config: MetronomeConfig) {
     currentInterval: state.currentInterval,
     maxBeats: maxBeatsConfig ? maxBeatsConfig.count : null,
     beatInterval: beatIntervalConfig ? beatIntervalConfig.count : null,
+    isDestroyed,
   });
 
   return {
@@ -310,6 +300,7 @@ export function createMetronome(config: MetronomeConfig) {
     stop,
     pause,
     resume,
+    destroy,
     updateConfig,
     getState,
   };

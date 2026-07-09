@@ -1,6 +1,8 @@
 node_modules
 dist
 
+pnpm-lock.yaml
+
 # Playwright
 /e2e/metronome.js
 /test-results/
